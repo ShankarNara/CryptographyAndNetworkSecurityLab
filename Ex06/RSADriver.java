@@ -4,91 +4,105 @@ import java.lang.*;
 import java.math.*;
 
 class RSA{
-	public int p,q;
-	public int e,d,phi,n;
+	public BigInteger p,q,mess;
+	public BigInteger e,d,phi,n;
+	public BigInteger[] encr;
 	// if message is integer
-	public int mess,cipher;
+	public int cipher;
 	// if message is string
 	public String mess_str;
 
-	public RSA(int p, int q,int m){
-		this.p = p;
-		this.q = q;
-		this.mess=m;
-		n = p*q;
-		phi = (p-1)*(q-1);
-	}
+	public RSA(String m){
+		this.mess_str=m;
+		//mess = new BigInteger(mess_str);
+		encr = new BigInteger[100];
 
-	public int getGcd(int a, int b){
-		
-		while(b>0){
-			int rem = a%b;
-			a=b;
-			b=rem;
-		}
+		System.out.println("\n\nGiven message : "+mess_str+"\n\n");
 
-		return a;
-	}
-
-	public int FastExpo(int x,int y,int p){
-		int res=1;
-
-		x=x%p;
-		while(y>0){
-
-			if(y%2==1) res=(res*x)%p;
-
-			y=y>>1;
-			x=(x*x)%p;
-		}
-
-		return res;
-	}
-
-	public int getInverse(){
-		int inv=1;
-
-		for(;inv<=phi;inv++){
-			if((inv*e)%phi==1){
-				return inv;
-			}
-		}
-		return -1;
-	}
-
-	public void keygen(){
-		System.out.println("n = p*q = "+n);
-		System.out.println("phi = (p-1)*(q-1) = "+phi);
-
-		//generating random element e
+		int limit =10;
+		String prime=new String("6");
 		Random rand = new Random();
-		e=phi;
-		while(getGcd(phi,e)!=1){
-			e = rand.nextInt(phi);
-			if(e<=0) e=2;
+		//generating the prime numbers P,Q
+		p = new BigInteger(prime);
+		while(!p.isProbablePrime(1)){
+			prime=new String();
+			for(int i=0;i<limit;i++){
+				int dig = rand.nextInt(10);
+				char ch = (char)(48+dig);
+				prime = prime+ch;
+			}
+
+			p = new BigInteger(prime,10);
 		}
 
-		System.out.println("e = "+e);
+		prime=new String("6");
+		q = new BigInteger(prime);
+		while(!q.isProbablePrime(1)){
+			prime=new String();
+			for(int i=0;i<limit;i++){
+				int dig = rand.nextInt(10);
+				char ch = (char)(48+dig);
+				prime=prime+ch;
+			}
 
-		d = getInverse();
-		System.out.println("d = inverse of e = "+d);
+			q = new BigInteger(prime,10);
+		}
 
-		System.out.println("Public key = ("+e+","+n+")");
-		System.out.println("Private key = ("+d+","+n+")");
+		n = p.multiply(q);
+		phi = p.add(BigInteger.valueOf(-1)).multiply(q.add(BigInteger.valueOf(-1)));
+
+		System.out.println("Generated prime number P = "+p.toString(16).toUpperCase());
+		System.out.println("Generated prime number Q  = "+q.toString(16).toUpperCase());
+		System.out.println("N = "+n.toString(16).toUpperCase());
+		System.out.println("Phi(p,q) = "+phi.toString(16).toUpperCase());
+	}
+
+	//to generate the e,d values 
+	public void keygen(){
+		Random rand = new Random();
+		
+		e = BigInteger.valueOf(1256);
+		while(e.gcd(phi).compareTo(BigInteger.ONE) != 0){
+			int limit=rand.nextInt(30)+1;
+			e = new BigInteger(limit, rand);	
+		}
+
+		d = e.modInverse(phi);
+
+		System.out.println("\nPublic key : "+"("+e.toString(16).toUpperCase()+","+n.toString(16).toUpperCase()+")");
+		System.out.println("\nPrivate key : "+"("+d.toString(16).toUpperCase()+","+n.toString(16).toUpperCase()+")");
 	}
 
 	public void encrypt(){
-		cipher = FastExpo(mess,e,n);
+		int len = mess_str.length();
+		mess_str = mess_str.toLowerCase();
+		for(int i=0;i<len;i++){
+			char ch = mess_str.charAt(i);
+			int inter = (int)ch;
+			mess = BigInteger.valueOf(inter);
+			encr[i] = mess.modPow(e,n);
+		}
+		
 
-		System.out.println("\nEncrypted message : "+cipher);
+		System.out.println("\n\nEncrypted message : ");
+		for(int i=0;i<len;i++){
+			System.out.print(encr[i].toString(16).toUpperCase()+" ");
+		}
 	}
-
+	
 	public void decrypt(){
-		int m = FastExpo(cipher,d,n);
 
-		System.out.println("\nDecrypted message : "+m);
+		String decr=new String();
+		int len = mess_str.length();
+
+		for (int i=0;i<len;i++){
+			mess = encr[i].modPow(d,n);
+			char ch = (char)(mess.intValue());
+			decr = decr+ch;
+		}
+
+		System.out.println("\n\nDecrypted message : "+decr);
 	}
-
 }
 
 public class RSADriver{
@@ -96,21 +110,17 @@ public class RSADriver{
 	public static void main(String[] args){
 		Scanner in = new Scanner(System.in);
 
-		int m;
+		String m;
 		int p,q;
 		System.out.println("Enter a message : ");
-		m = in.nextInt();
-		System.out.println("Enter prime numbers p, q");
-		p = in.nextInt();
-		q = in.nextInt();
+		m = in.nextLine();
 
-		RSA rsa = new RSA(p,q,m);
+		RSA rsa = new RSA(m);
 
 		rsa.keygen();
 
 		rsa.encrypt();
 
 		rsa.decrypt();
-
 	}
 }
