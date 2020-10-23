@@ -9,12 +9,12 @@ class DHKE{
 
 	public DHKE(){
 
-		int limit =10;
+		int limit =20;
 		String prime=new String("6");
 		Random rand = new Random();
 		//generating the prime numbers P,Q
 		p = new BigInteger(prime);
-		while(!returnPrime(p)){
+		while(!MillerRabinTest(p)){
 			prime=new String();
 			for(int i=0;i<limit;i++){
 				int dig = rand.nextInt(10);
@@ -49,6 +49,40 @@ class DHKE{
 	    }
 	    return true;
 	}
+
+	boolean MillerRabinTest(BigInteger p){
+	    BigInteger r = p.mod(new BigInteger("2"));
+	    if(r.equals(new BigInteger("0"))){
+	      return false;
+	    }
+	    BigInteger x = p.add(new BigInteger("-1"));
+	    BigInteger q;
+	    BigInteger k = new BigInteger("-1");
+	    BigInteger pow2 = new BigInteger("1");
+	    do{
+	      k = k.add(k);
+	      q = x.divide(pow2);
+	      pow2 = pow2.multiply(new BigInteger("2"));
+	    }while(q.mod(new BigInteger("2")).equals(new BigInteger("0")));
+	    Random rnd = new Random();
+	    BigInteger a;
+	    do{
+	      a = new BigInteger(x.bitLength(),rnd);
+	    }while(a.compareTo(new BigInteger("1"))>0 && a.compareTo(x)<0);
+	    BigInteger res = a.modPow(q,p);
+	    if(res.equals(new BigInteger("1")))
+	    return true;
+	    BigInteger j = new BigInteger("0");
+	    pow2 = new BigInteger("1");
+	    while(j.compareTo(k)<0){
+	      pow2 = pow2.multiply(new BigInteger("2"));
+	      res = a.modPow(pow2.multiply(q),p);
+	      j = j.add(new BigInteger("1"));
+	      if(res.equals(x))
+	      return true;
+	    }
+	    return false; 
+  	}
 
 	//Code to get the primitive roots
 	public BigInteger getPrimitiveRoot(){
@@ -95,17 +129,27 @@ class DHKE{
 
 	public void generateKey(){
 		BigInteger xA,xB;
-		int lim = p.intValue();
+		//int lim = p.intValue();
 
 		Random rand = new Random();
-		int xa = rand.nextInt(lim);
-		if(xa<=0) xa=1;
-		xA = BigInteger.valueOf(xa);
+		xA = BigInteger.valueOf(7);
+		//System.out.println("lim = "+lim);
+		//int xa = rand.nextInt(lim);
+		//if(xa<=0) xa=1;
+		//xA = BigInteger.valueOf(xa);
+		do {
+			xA = new BigInteger(5199,rand);
+			break;
+		} while(xA.compareTo(p)>0);
 		prA = g.modPow(xA,p);
 
-		int xb = rand.nextInt(lim);
-		if(xb<=0) xb=1;
-		xB = BigInteger.valueOf(xb);
+		// int xb = rand.nextInt(lim);
+		// if(xb<=0) xb=1;
+		xB = BigInteger.valueOf(134);
+		do {
+			xB = new BigInteger(5,rand);
+			break;
+		}while(xB.compareTo(p)<0);
 		prB = g.modPow(xB,p);
 
 		System.out.println("Private key of A : "+prA.toString(16).toUpperCase()+
